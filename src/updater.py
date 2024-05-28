@@ -10,7 +10,7 @@
 Sources:
     - Event payloads sent by BitBucket: https://support.atlassian.com/bitbucket-cloud/docs/event-payloads/
     - Complete POST header and body can be found in the Webhooks tab of the repo's settings and under 
-        "Last success/failure" of the hook that was setup: 
+        "Last success/failure" of the hook that was set-up: 
         https://bitbucket.octasic.com:8443/plugins/servlet/webhooks/projects/OADF/repos/oadf_docs
 '''
 from flask import Flask, request
