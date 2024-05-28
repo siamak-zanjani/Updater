@@ -3,7 +3,7 @@ name: Trigger docusaurus Workflow on Release
 on:
    push:
     branches:
-      - master
+      - main
 jobs:
   notify-docusaurus:
     runs-on: self-hosted
