@@ -1,0 +1,66 @@
+name: Trigger docusaurus Workflow on Release
+
+on:
+   push:
+    branches:
+      - master
+jobs:
+  notify-docusaurus:
+    runs-on: self-hosted
+    steps:
+    - name: Check if PowerShell is installed
+      id: pwsh-check
+      shell: bash
+      run: |
+        if command -v pwsh >/dev/null 2>&1; then
+          echo "PowerShell is already installed."
+          echo "pwsh_installed=true" >> $GITHUB_ENV
+        else
+          echo "PowerShell is not installed."
+          echo "pwsh_installed=false" >> $GITHUB_ENV
+        fi
+
+    - name: Install PowerShell if not installed
+      if: env.pwsh_installed == 'false'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget apt-transport-https software-properties-common
+        wget -q "https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb"
+        sudo dpkg -i packages-microsoft-prod.deb
+        sudo apt-get update
+        sudo apt-get install -y powershell
+
+    - name: Trigger Workflow in docusaurus
+      shell: pwsh
+      run: |    
+        function Invoke-GitHubActionsWorkflow {
+          param(
+              [Parameter(Mandatory=$true)][string]$repo,
+              [Parameter(Mandatory=$true)][string]$workflowFileName,
+              [Parameter(Mandatory=$true)][string]$token,
+              [Parameter(Mandatory=$true)][string]$repoUri,
+              [Parameter(Mandatory=$true)][string]$externalToken,
+              [Parameter(Mandatory=$true)][string]$version
+          )
+      
+          $headers = @{
+              Accept = "application/vnd.github.v3+json"
+              Authorization = "token $token"
+          }
+      
+          $body = @{
+              ref = "main"
+              inputs = @{
+                  repo_uri = $repoUri
+                  token = $externalToken
+                  version = $version
+              }
+          } | ConvertTo-Json
+      
+          $uri = "https://api.github.com/repos/$repo/actions/workflows/$workflowFileName/dispatches"
+      
+          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ContentType "application/json"
+        } 
+        
+        Invoke-GitHubActionsWorkflow -repo "siamak-zanjani/docusaurus" -workflowFileName "getupdate.yml" -token "${{ secrets.PAT }}" -repoUri "github.com/siamak-zanjani/Updater" -externalToken "${{ secrets.PAT }}" -version "${{ github.event.release.tag_name }}"
